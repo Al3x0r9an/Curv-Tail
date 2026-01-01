@@ -1,0 +1,83 @@
+# CURV-TAIL: tiny synthetic demo (functional smoke test, not a benchmark).
+#
+# The architecture / tokenization / losses are EXACTLY those of the two real
+# recipes, only scaled down (dim 32, depth 2, kernel 3, dilation cycle [1, 2],
+# 16 packets, 64 bytes per direction instead of 256) so that a full train + test
+# run finishes in about a minute on CPU.  It is meant to verify that
+# installation, data loading, training, checkpointing and evaluation all work
+# end to end.
+#
+# Generate the demo cache first:
+#
+#     python scripts/build_demo_cache.py          # writes ./demo_cache (600 flows)
+#
+# then run (one-click alternative: scripts/run_demo.sh or run_demo.bat)
+#
+#     python -m curv_tail.train --config configs/demo.yaml --mode train \
+#         --run-dir outputs/demo_run
+#     python -m curv_tail.train --config configs/demo.yaml --mode test \
+#         --checkpoint outputs/demo_run/checkpoints/best_macro_f1.pt
+#
+# (test mode reuses the training run directory -- it is inferred from the
+# checkpoint path -- so the train/test artifacts stay in outputs/demo_run).
+
+experiment:
+  name: curv_tail_demo
+  seed: 42
+  output_root: outputs
+
+data:
+  dataset_name: CURV-TAIL-synthetic-demo
+  cache_dir: demo_cache
+  manifest:  demo_cache/manifest.jsonl
+  split:     demo_cache/split.json
+  input_view: packet_bytes_multiview
+  expected_num_samples: 600
+  expected_num_classes: 12
+  max_packets: 16
+
+model:
+  family: lorentz_origin_multiview
+  temporal: conv
+  view: multiview
+  length_embed: true
+  length_vocab: 1535
+  coarse_scale: 1424
+  length_block: 1
+  length_embed_dim: 16
+  use_direction: true
+  use_position: true
+  rec_weight: 0.5
+  input_dim: 2
+  dim: 32
+  depth: 2
+  kernel_size: 3
+  dilation_cycle: [1, 2]
+  dropout: 0.1
+  byte_embed_dim: 24
+  byte_patch_size: 8
+  max_bytes_per_direction: 64
+  packet_pooling: attention
+  curvature: 1.0
+  learnable_curvature: true
+  min_curvature: 0.05
+  max_curvature: 2.0
+  lift_scale: 0.1
+  max_tangent_norm: 6.0
+  prototype_temperature: 1.0
+  geometry: hyperbolic
+
+training:
+  epochs: 3
+  batch_size: 64
+  eval_batch_size: 128
+  gradient_accumulation: 1
+  num_workers: 0
+  learning_rate: 5.0e-4
+  weight_decay: 0.01
+  warmup_epochs: 1
+  min_learning_rate: 5.0e-6
+  grad_clip_norm: 1.0
+  amp: none                             # CPU smoke test: no autocast
+  early_stop_patience: 5
+  keep_latest: 3

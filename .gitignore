@@ -1,0 +1,26 @@
+# Byte-compiled / caches
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.eggs/
+
+# Environment
+.venv/
+venv/
+env/
+
+# Run outputs / data caches
+outputs/
+demo_cache/
+
+# Large datasets & regenerable mini caches (download from Google Drive)
+data/full/
+data/mini/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

@@ -1,0 +1,74 @@
+# CURV-TAIL: NUDT-Mobile recipe.
+#
+# This is the *hyperbolic* configuration for the
+# NUDT-Mobile benchmark (300 classes, 1,282,557 flows).
+#
+# The model and training blocks are IDENTICAL across both datasets; only
+# the `data` section differs.  Swap geometry: hyperbolic -> euclidean to run the
+# Euclidean twin ablation (same architecture, plain Conv1d + linear head).
+
+experiment:
+  name: curv_tail_nudt_mobile
+  seed: 42                     # override with: curv-train --config ... --seed S
+  output_root: outputs
+
+data:
+  dataset_name: NUDT-Mobile
+  # Paths are relative to the repository root.  Download the released caches
+  # from Google Drive (see README.md -> "Getting the datasets") and place this
+  # dataset under data/full/nudt_mobile/.  That directory must contain:
+  # manifest.jsonl, split.json, cache_manifest.json, sequences.npy,
+  # lengths.npy, fwd_bytes.npy, bwd_bytes.npy, labels.npy, sample_ids.txt.
+  cache_dir: data/full/nudt_mobile
+  manifest:  data/full/nudt_mobile/manifest.jsonl
+  split:     data/full/nudt_mobile/split.json
+  input_view: packet_bytes_multiview   # double-branch view (required)
+  expected_num_samples: 1282557
+  expected_num_classes: 300
+  max_packets: 64                      # == cache sequence width
+
+model:
+  family: lorentz_origin_multiview     # CURV-TAIL (only supported family)
+  temporal: conv                       # origin-tangent dilated Conv1d blocks
+  view: multiview                      # double-branch (only supported view)
+  length_embed: true                   # exact discrete length tokens (required)
+  length_vocab: 1535                   # tokens 0..1503 exact sizes, 1504..1534 coarse
+  coarse_scale: 1424                   # R4 coarse grid for coalesced packets
+  length_block: 1                      # 1-byte length quantization
+  length_embed_dim: 16
+  use_direction: true
+  use_position: true
+  rec_weight: 0.5                      # masked length-token reconstruction aux
+  input_dim: 2                         # [signed_log1p_size, log1p_iat]
+  dim: 128
+  depth: 3
+  kernel_size: 5
+  dilation_cycle: [1, 2, 4]
+  dropout: 0.1
+  byte_embed_dim: 24
+  byte_patch_size: 8
+  max_bytes_per_direction: 256
+  packet_pooling: attention
+  curvature: 1.0
+  learnable_curvature: true
+  min_curvature: 0.05
+  max_curvature: 2.0
+  lift_scale: 0.1
+  max_tangent_norm: 6.0
+  prototype_temperature: 1.0
+  geometry: hyperbolic                 # hyperbolic = CURV-TAIL method
+
+training:
+  epochs: 50
+  batch_size: 1024
+  eval_batch_size: 2048
+  gradient_accumulation: 1
+  num_workers: 0                      # 0 = safe cross-platform; raise on Linux/macOS
+  learning_rate: 5.0e-4
+  weight_decay: 0.01
+  warmup_epochs: 3
+  min_learning_rate: 5.0e-6
+  grad_clip_norm: 1.0
+  amp: bf16                           # bf16 | fp16 | none
+  early_stop_patience: 12
+  keep_latest: 3

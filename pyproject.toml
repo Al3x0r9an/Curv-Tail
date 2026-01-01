@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "curv-tail"
+version = "1.0.0"
+description = "CURV-TAIL: curvature-adaptive origin-tangent Lorentz temporal CNN for long-tailed encrypted traffic classification"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "Apache-2.0" }
+authors = [{ name = "CURV-TAIL authors" }]
+keywords = [
+    "encrypted-traffic-classification",
+    "long-tail",
+    "hyperbolic-learning",
+    "lorentz",
+    "traffic-analysis",
+]
+classifiers = [
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Programming Language :: Python :: 3",
+]
+dependencies = [
+    "numpy>=1.26",
+    "pandas>=2.2",
+    "PyYAML>=6",
+    "scikit-learn>=1.7",
+    "torch>=2.1",
+]
+
+[project.scripts]
+curv-train = "curv_tail.train:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["curv_tail*"]

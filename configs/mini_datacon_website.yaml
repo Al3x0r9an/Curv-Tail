@@ -1,0 +1,83 @@
+# CURV-TAIL: DataCon-Website *mini* check recipe.
+#
+# A small (~420-flow), faithful slice of the DataCon-Website-zeek cache used to
+# verify that the pipeline and this configuration run end to end before
+# downloading the full dataset.  Build the mini cache from the committed sample
+# CSV first:
+#
+#     python scripts/sample_csv_to_cache.py \
+#         --csv data/samples/datacon_website_mini.csv \
+#         --out data/mini/datacon_website --name datacon_website_mini
+#
+# then run (see scripts/run_mini.sh / run_mini.bat for both datasets):
+#
+#     python -m curv_tail.train --config configs/mini_datacon_website.yaml --mode train
+#
+# The `model` block is IDENTICAL to the full recipe (dim 128, depth 3, ...).  The
+# `training` block differs in scale only (10 vs 50 epochs, batch 512 vs 1024,
+# eval batch 512 vs 2048, warm-up 1 vs 3, patience 4 vs 12).  The `data` block
+# keeps the full recipe's expected_num_classes (100) and differs only in
+# expected_num_samples, dataset_name and the cache paths.  Metrics here are
+# for smoke-testing only,
+# not for comparison with the released full-recipe numbers.
+
+experiment:
+  name: curv_tail_mini_datacon
+  seed: 42
+  output_root: outputs
+
+data:
+  dataset_name: DataCon-Website-zeek (mini)
+  cache_dir: data/mini/datacon_website
+  manifest:  data/mini/datacon_website/manifest.jsonl
+  split:     data/mini/datacon_website/split.json
+  input_view: packet_bytes_multiview
+  expected_num_samples: 420
+  expected_num_classes: 100
+  max_packets: 64
+
+model:
+  family: lorentz_origin_multiview
+  temporal: conv
+  view: multiview
+  length_embed: true
+  length_vocab: 1535
+  coarse_scale: 1424
+  length_block: 1
+  length_embed_dim: 16
+  use_direction: true
+  use_position: true
+  rec_weight: 0.5
+  input_dim: 2
+  dim: 128
+  depth: 3
+  kernel_size: 5
+  dilation_cycle: [1, 2, 4]
+  dropout: 0.1
+  byte_embed_dim: 24
+  byte_patch_size: 8
+  max_bytes_per_direction: 256
+  packet_pooling: attention
+  curvature: 1.0
+  learnable_curvature: true
+  min_curvature: 0.05
+  max_curvature: 2.0
+  lift_scale: 0.1
+  max_tangent_norm: 6.0
+  prototype_temperature: 1.0
+  geometry: hyperbolic
+
+training:
+  epochs: 10
+  batch_size: 512
+  eval_batch_size: 512
+  gradient_accumulation: 1
+  num_workers: 0
+  learning_rate: 5.0e-4
+  weight_decay: 0.01
+  warmup_epochs: 1
+  min_learning_rate: 5.0e-6
+  grad_clip_norm: 1.0
+  amp: bf16
+  early_stop_patience: 4
+  keep_latest: 3

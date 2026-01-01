@@ -1,0 +1,10 @@
+# Normalize text line endings; keep shell scripts on LF so they run on any OS.
+* text=auto
+*.sh   text eol=lf
+*.bat  text eol=crlf
+*.py   text eol=lf
+*.yaml text eol=lf
+*.md   text eol=lf
+*.toml text eol=lf
+*.txt  text eol=lf
+*.csv  text
